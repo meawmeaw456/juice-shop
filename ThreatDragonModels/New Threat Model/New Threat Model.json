@@ -115,8 +115,8 @@
                 "text": "user/navigator"
               },
               "body": {
-                "stroke": "#333333",
-                "strokeWidth": 1.5,
+                "stroke": "red",
+                "strokeWidth": 2.5,
                 "strokeDasharray": null
               }
             },
@@ -213,9 +213,40 @@
               "isTrustBoundary": false,
               "outOfScope": false,
               "reasonOutOfScope": "",
-              "hasOpenThreats": false,
+              "hasOpenThreats": true,
               "providesAuthentication": false,
-              "threats": []
+              "threats": [
+                {
+                  "id": "ece8f330-45a9-4e67-860f-3749ab612144",
+                  "title": "New STRIDE threat",
+                  "status": "Open",
+                  "severity": "High",
+                  "type": "Spoofing",
+                  "description": "Usurpation d'un utilisateur (vol/forgeage de session)",
+                  "mitigation": "Validation stricte des jetons/sessions.",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 1,
+                  "score": ""
+                },
+                {
+                  "id": "279027b0-445e-4b2f-9483-180407e90bc3",
+                  "title": "New STRIDE threat",
+                  "status": "Open",
+                  "severity": "Medium",
+                  "type": "Repudiation",
+                  "description": "Répudiation d'actions (manque de traçabilité)",
+                  "mitigation": "Journalisation côté serveur",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 2,
+                  "score": ""
+                }
+              ],
+              "threatFrequency": {
+                "spoofing": 1,
+                "repudiation": 1
+              }
             }
           },
           {
@@ -232,8 +263,8 @@
                 "text": "google(Oauth 2.0)"
               },
               "body": {
-                "stroke": "#333333",
-                "strokeWidth": 1.5,
+                "stroke": "red",
+                "strokeWidth": 2.5,
                 "strokeDasharray": null
               }
             },
@@ -330,9 +361,27 @@
               "isTrustBoundary": false,
               "outOfScope": false,
               "reasonOutOfScope": "",
-              "hasOpenThreats": false,
+              "hasOpenThreats": true,
               "providesAuthentication": true,
-              "threats": []
+              "threats": [
+                {
+                  "id": "b776de74-a2db-41b7-913b-a870817b424e",
+                  "title": "Détournement du flux OAuth",
+                  "status": "Open",
+                  "severity": "Medium",
+                  "type": "Spoofing",
+                  "description": "URI de redirection mal validée ou absence de paramètre state.",
+                  "mitigation": "Valider les URI de redirection et le paramètre state.",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 11,
+                  "score": ""
+                }
+              ],
+              "threatFrequency": {
+                "spoofing": 1,
+                "repudiation": 0
+              }
             }
           },
           {
@@ -349,8 +398,8 @@
                 "text": "front-end\n(Angular)"
               },
               "body": {
-                "stroke": "#333333",
-                "strokeWidth": 1.5,
+                "stroke": "red",
+                "strokeWidth": 2.5,
                 "strokeDasharray": null
               }
             },
@@ -447,12 +496,47 @@
               "outOfScope": false,
               "isTrustBoundary": false,
               "reasonOutOfScope": "",
-              "hasOpenThreats": false,
+              "hasOpenThreats": true,
               "handlesCardPayment": false,
               "handlesGoodsOrServices": false,
               "isWebApplication": true,
               "privilegeLevel": "",
-              "threats": []
+              "threats": [
+                {
+                  "id": "d737cde2-5368-47bd-ae6e-7bb5ae8a7c6d",
+                  "title": "XSS (script injecté)",
+                  "status": "Open",
+                  "severity": "High",
+                  "type": "Tampering",
+                  "description": "Du script malveillant s'exécute dans le navigateur (failles XSS présentes dans Juice Shop).",
+                  "mitigation": "Encodage en sortie ; politique CSP.",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 12,
+                  "score": ""
+                },
+                {
+                  "id": "eee0e900-cfd6-4663-aca5-f99198d488ce",
+                  "title": "Logique/secrets côté client",
+                  "status": "Open",
+                  "severity": "Medium",
+                  "type": "Information disclosure",
+                  "description": "Tout ce qui tourne dans le navigateur est visible et modifiable par l'utilisateur.",
+                  "mitigation": "Ne jamais placer un secret ou un contrôle de sécurité uniquement côté client.",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 13,
+                  "score": ""
+                }
+              ],
+              "threatFrequency": {
+                "spoofing": 0,
+                "tampering": 1,
+                "repudiation": 0,
+                "informationDisclosure": 1,
+                "denialOfService": 0,
+                "elevationOfPrivilege": 0
+              }
             }
           },
           {
@@ -469,8 +553,8 @@
                 "text": "server Express\n(Node.js)"
               },
               "body": {
-                "stroke": "#333333",
-                "strokeWidth": 1.5,
+                "stroke": "red",
+                "strokeWidth": 2.5,
                 "strokeDasharray": null
               }
             },
@@ -567,12 +651,93 @@
               "outOfScope": false,
               "isTrustBoundary": false,
               "reasonOutOfScope": "",
-              "hasOpenThreats": false,
+              "hasOpenThreats": true,
               "handlesCardPayment": false,
               "handlesGoodsOrServices": false,
               "isWebApplication": true,
               "privilegeLevel": "Application user account",
-              "threats": []
+              "threats": [
+                {
+                  "id": "438c6a5d-f5fc-4311-b29d-1bf4d5c85f40",
+                  "title": "Contournement d'authentification",
+                  "status": "Open",
+                  "severity": "High",
+                  "type": "Spoofing",
+                  "description": "Jeton/session falsifié permettant de se faire passer pour un autre utilisateur.",
+                  "mitigation": "Validation stricte des jetons/sessions.",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 4,
+                  "score": ""
+                },
+                {
+                  "id": "2239f477-04c5-4e9c-9ab2-e91be97d3e49",
+                  "title": "Injection NoSQL (MarsDB)",
+                  "status": "Open",
+                  "severity": "High",
+                  "type": "Tampering",
+                  "description": "Interaction MarsDB via syntaxe MongoDB ; un opérateur comme $ne permet une manipulation massive de données.",
+                  "mitigation": "Sanitisation des entrées (ex. express-mongo-sanitize).",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 5,
+                  "score": ""
+                },
+                {
+                  "id": "d737a150-e89c-4d65-aca1-a0aec85598fb",
+                  "title": "Journalisation insuffisante",
+                  "status": "Open",
+                  "severity": "Medium",
+                  "type": "Repudiation",
+                  "description": "Actions sensibles non tracées → impossible de prouver qui a fait quoi.",
+                  "mitigation": "Journal d'audit des actions sensibles.",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 6,
+                  "score": ""
+                },
+                {
+                  "id": "0b07f1b3-352f-42a6-959e-f94648376b67",
+                  "title": "Divulgation de données sensibles",
+                  "status": "Open",
+                  "severity": "High",
+                  "type": "Information disclosure",
+                  "description": "Des champs sensibles existent en base (password, totpSecret) ; une fuite via réponse ou message d'erreur les expose.",
+                  "mitigation": "Filtrer les réponses ; gestion d'erreurs sans fuite.",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 7,
+                  "score": ""
+                },
+                {
+                  "id": "48c9dd91-46e7-4670-8fe5-11f952f575fe",
+                  "title": "Déni de service",
+                  "status": "Open",
+                  "severity": "Medium",
+                  "type": "Denial of service",
+                  "description": "Épuisement de ressources rendant l'API indisponible.",
+                  "mitigation": "Limitation de débit, timeouts.",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 8,
+                  "score": ""
+                }
+              ],
+              "threatFrequency": {
+                "spoofing": 2,
+                "tampering": 1,
+                "repudiation": 1,
+                "informationDisclosure": 1,
+                "denialOfService": 1,
+                "elevationOfPrivilege": 0
+              }
+            },
+            "tools": {
+              "items": [
+                "boundary",
+                "button-remove"
+              ],
+              "name": null
             }
           },
           {
@@ -589,11 +754,13 @@
                 "text": "content Folder"
               },
               "topLine": {
-                "strokeWidth": 1.5,
+                "stroke": "red",
+                "strokeWidth": 2.5,
                 "strokeDasharray": null
               },
               "bottomLine": {
-                "strokeWidth": 1.5,
+                "stroke": "red",
+                "strokeWidth": 2.5,
                 "strokeDasharray": null
               }
             },
@@ -690,13 +857,27 @@
               "outOfScope": false,
               "isTrustBoundary": false,
               "reasonOutOfScope": "",
-              "hasOpenThreats": false,
+              "hasOpenThreats": true,
               "isALog": false,
               "isEncrypted": false,
               "isSigned": false,
               "storesCredentials": false,
               "storesInventory": true,
-              "threats": []
+              "threats": [
+                {
+                  "id": "e6939e65-e778-4899-8d19-0111ea410570",
+                  "title": "New STRIDE threat",
+                  "status": "Open",
+                  "severity": "TBD",
+                  "type": "Tampering",
+                  "description": "Provide a description for this threat",
+                  "mitigation": "Provide remediation for this threat or a reason if status is N/A",
+                  "modelType": "STRIDE",
+                  "new": true,
+                  "number": 10,
+                  "score": ""
+                }
+              ]
             }
           },
           {
@@ -1304,6 +1485,6 @@
     ],
     "diagramTop": 2,
     "reviewer": "",
-    "threatTop": 0
+    "threatTop": 13
   }
 }
