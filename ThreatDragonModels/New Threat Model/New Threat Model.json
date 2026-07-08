@@ -1330,7 +1330,8 @@
             "shape": "flow",
             "attrs": {
               "line": {
-                "stroke": "#333333",
+                "stroke": "red",
+                "strokeWidth": 2.5,
                 "targetMarker": {
                   "name": "block"
                 },
@@ -1351,13 +1352,58 @@
               "outOfScope": false,
               "isTrustBoundary": false,
               "reasonOutOfScope": "",
-              "hasOpenThreats": false,
+              "hasOpenThreats": true,
               "isBidirectional": true,
               "isEncrypted": false,
               "isPublicNetwork": false,
               "protocol": "http",
-              "threats": [],
-              "trustBoundaryIds": []
+              "threats": [
+                {
+                  "id": "24dc5bb7-8438-4ce3-a155-ab54700f1532",
+                  "title": "Altération en transit",
+                  "status": "Open",
+                  "severity": "Medium",
+                  "type": "Tampering",
+                  "description": "Messages modifiés entre client et serveur.",
+                  "mitigation": "TLS + contrôle d'intégrité.",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 22,
+                  "score": ""
+                },
+                {
+                  "id": "79faf41c-3447-4c38-bcf0-216cf2ef3118",
+                  "title": "Interception en transit",
+                  "status": "Open",
+                  "severity": "Medium",
+                  "type": "Information disclosure",
+                  "description": "En local vous êtes en HTTP (non chiffré) ; en production il faut TLS.",
+                  "mitigation": "TLS.",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 23,
+                  "score": ""
+                },
+                {
+                  "id": "7e51d7db-913f-4930-9edf-d3a8f127cced",
+                  "title": "Déni de service sur le flux",
+                  "status": "Open",
+                  "severity": "Medium",
+                  "type": "Denial of service",
+                  "description": "Saturation du canal exposé.",
+                  "mitigation": "Limitation de débit, timeouts.",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 24,
+                  "score": ""
+                }
+              ],
+              "trustBoundaryIds": [],
+              "threatFrequency": {
+                "tampering": 1,
+                "informationDisclosure": 1,
+                "denialOfService": 1
+              }
             },
             "labels": [
               "REST Api"
@@ -1373,10 +1419,20 @@
             },
             "vertices": [
               {
-                "x": 490,
+                "x": 600,
                 "y": 90
               }
-            ]
+            ],
+            "tools": {
+              "items": [
+                "boundary",
+                "button-remove",
+                "vertices",
+                "source-arrowhead",
+                "target-arrowhead"
+              ],
+              "name": null
+            }
           },
           {
             "shape": "flow",
@@ -1580,6 +1636,6 @@
     ],
     "diagramTop": 2,
     "reviewer": "",
-    "threatTop": 21
+    "threatTop": 24
   }
 }
