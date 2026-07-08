@@ -114,6 +114,7 @@
             },
             "visible": true,
             "shape": "actor",
+            "zIndex": 1,
             "ports": {
               "groups": {
                 "top": {
@@ -197,7 +198,6 @@
               ]
             },
             "id": "9157e6d4-0ae6-43e1-8d74-47960544981a",
-            "zIndex": 1,
             "data": {
               "type": "tm.Actor",
               "name": "user/navigator",
@@ -231,6 +231,7 @@
             },
             "visible": true,
             "shape": "actor",
+            "zIndex": 2,
             "ports": {
               "groups": {
                 "top": {
@@ -314,7 +315,6 @@
               ]
             },
             "id": "f02053ee-95ae-408b-8c3c-6bfdc16f6810",
-            "zIndex": 2,
             "data": {
               "type": "tm.Actor",
               "name": "google(Oauth 2.0)",
@@ -348,6 +348,7 @@
             },
             "visible": true,
             "shape": "process",
+            "zIndex": 3,
             "ports": {
               "groups": {
                 "top": {
@@ -431,7 +432,6 @@
               ]
             },
             "id": "792000c2-c0fc-4921-a6d4-1da5ad1fc02f",
-            "zIndex": 3,
             "data": {
               "type": "tm.Process",
               "name": "front-end\n(Angular)",
@@ -468,6 +468,7 @@
             },
             "visible": true,
             "shape": "process",
+            "zIndex": 4,
             "ports": {
               "groups": {
                 "top": {
@@ -551,7 +552,6 @@
               ]
             },
             "id": "2d0004e9-fb08-4677-8df0-da9af995f161",
-            "zIndex": 4,
             "data": {
               "type": "tm.Process",
               "name": "server Express\n(Node.js)",
@@ -591,6 +591,7 @@
             },
             "visible": true,
             "shape": "store",
+            "zIndex": 5,
             "ports": {
               "groups": {
                 "top": {
@@ -674,7 +675,6 @@
               ]
             },
             "id": "9f7e37a8-627c-41e6-91a0-a98800a14eff",
-            "zIndex": 5,
             "data": {
               "type": "tm.Store",
               "name": "content Folder",
@@ -715,6 +715,7 @@
             },
             "visible": true,
             "shape": "store",
+            "zIndex": 6,
             "ports": {
               "groups": {
                 "top": {
@@ -798,7 +799,6 @@
               ]
             },
             "id": "496f6e5a-a14e-4b24-8ade-caf84add23ce",
-            "zIndex": 6,
             "data": {
               "type": "tm.Store",
               "name": "SQlite (mainDB)",
@@ -839,6 +839,7 @@
             },
             "visible": true,
             "shape": "store",
+            "zIndex": 7,
             "ports": {
               "groups": {
                 "top": {
@@ -922,7 +923,6 @@
               ]
             },
             "id": "7dbbd656-1fe5-4c77-a7c6-81a52a56f6a6",
-            "zIndex": 7,
             "data": {
               "type": "tm.Store",
               "name": "MarsDB(NoSQL)",
