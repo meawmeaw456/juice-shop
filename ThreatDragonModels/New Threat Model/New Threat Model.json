@@ -25,7 +25,7 @@
             "connector": "smooth",
             "data": {
               "type": "tm.Boundary",
-              "name": "Trust Boundary",
+              "name": "internet input",
               "description": "",
               "isTrustBoundary": true,
               "hasOpenThreats": false,
@@ -33,7 +33,7 @@
               "containedElements": []
             },
             "labels": [
-              "Trust Boundary"
+              "internet input"
             ],
             "id": "fbef4e2c-71ff-4cc8-85b6-71bab5a6aaf8",
             "source": {
@@ -48,6 +48,14 @@
               {
                 "x": 300,
                 "y": 150
+              },
+              {
+                "x": 300,
+                "y": 270
+              },
+              {
+                "x": 270,
+                "y": 330
               }
             ]
           },
@@ -1286,7 +1294,7 @@
                 "y": 250
               },
               {
-                "x": 760,
+                "x": 850,
                 "y": 250
               }
             ]
