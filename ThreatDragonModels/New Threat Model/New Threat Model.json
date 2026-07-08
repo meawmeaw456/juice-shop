@@ -872,7 +872,7 @@
                   "name": "block"
                 },
                 "sourceMarker": {
-                  "name": ""
+                  "name": "block"
                 },
                 "strokeDasharray": null
               }
@@ -883,21 +883,21 @@
             "connector": "smooth",
             "data": {
               "type": "tm.Flow",
-              "name": "Data Flow",
-              "description": "",
+              "name": "log in ",
+              "description": "using credentials and 2FA\nif enabled",
               "outOfScope": false,
               "isTrustBoundary": false,
               "reasonOutOfScope": "",
               "hasOpenThreats": false,
-              "isBidirectional": false,
+              "isBidirectional": true,
               "isEncrypted": false,
               "isPublicNetwork": false,
-              "protocol": "",
+              "protocol": "http",
               "threats": [],
               "trustBoundaryIds": []
             },
             "labels": [
-              "Data Flow"
+              "log in "
             ],
             "id": "4158918e-49e3-4a91-8ce5-7abdba03efb1",
             "source": {
@@ -919,7 +919,7 @@
                   "name": "block"
                 },
                 "sourceMarker": {
-                  "name": ""
+                  "name": "block"
                 },
                 "strokeDasharray": null
               }
@@ -930,21 +930,21 @@
             "connector": "smooth",
             "data": {
               "type": "tm.Flow",
-              "name": "Data Flow",
+              "name": "authentication SSO",
               "description": "",
               "outOfScope": false,
               "isTrustBoundary": false,
               "reasonOutOfScope": "",
               "hasOpenThreats": false,
-              "isBidirectional": false,
-              "isEncrypted": false,
+              "isBidirectional": true,
+              "isEncrypted": true,
               "isPublicNetwork": false,
-              "protocol": "",
+              "protocol": "https",
               "threats": [],
               "trustBoundaryIds": []
             },
             "labels": [
-              "Data Flow"
+              "authentication SSO"
             ],
             "id": "22468ab5-3c78-46b6-841d-4076f48f0036",
             "source": {
@@ -955,7 +955,16 @@
               "cell": "792000c2-c0fc-4921-a6d4-1da5ad1fc02f",
               "port": "666e3cf3-3c40-4376-ab8d-4ba4c871d4ec"
             },
-            "vertices": []
+            "vertices": [
+              {
+                "x": 300,
+                "y": 220
+              },
+              {
+                "x": 340,
+                "y": 220
+              }
+            ]
           },
           {
             "shape": "flow",
