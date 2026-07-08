@@ -975,7 +975,7 @@
                   "name": "block"
                 },
                 "sourceMarker": {
-                  "name": ""
+                  "name": "block"
                 },
                 "strokeDasharray": null
               }
@@ -986,21 +986,21 @@
             "connector": "smooth",
             "data": {
               "type": "tm.Flow",
-              "name": "Data Flow",
+              "name": "REST Api",
               "description": "",
               "outOfScope": false,
               "isTrustBoundary": false,
               "reasonOutOfScope": "",
               "hasOpenThreats": false,
-              "isBidirectional": false,
+              "isBidirectional": true,
               "isEncrypted": false,
               "isPublicNetwork": false,
-              "protocol": "",
+              "protocol": "http",
               "threats": [],
               "trustBoundaryIds": []
             },
             "labels": [
-              "Data Flow"
+              "REST Api"
             ],
             "id": "1c926b3a-4cde-4607-b12a-d3a03b91720d",
             "source": {
@@ -1011,7 +1011,12 @@
               "cell": "2d0004e9-fb08-4677-8df0-da9af995f161",
               "port": "4b1b5d09-709d-426a-a212-300c27622d65"
             },
-            "vertices": []
+            "vertices": [
+              {
+                "x": 490,
+                "y": 90
+              }
+            ]
           },
           {
             "shape": "flow",
@@ -1022,7 +1027,7 @@
                   "name": "block"
                 },
                 "sourceMarker": {
-                  "name": ""
+                  "name": "block"
                 },
                 "strokeDasharray": null
               }
@@ -1033,21 +1038,21 @@
             "connector": "smooth",
             "data": {
               "type": "tm.Flow",
-              "name": "Data Flow",
+              "name": "socket.io\n (WebSocket)",
               "description": "",
               "outOfScope": false,
               "isTrustBoundary": false,
               "reasonOutOfScope": "",
               "hasOpenThreats": false,
-              "isBidirectional": false,
+              "isBidirectional": true,
               "isEncrypted": false,
               "isPublicNetwork": false,
-              "protocol": "",
+              "protocol": "ws",
               "threats": [],
               "trustBoundaryIds": []
             },
             "labels": [
-              "Data Flow"
+              "socket.io\n (WebSocket)"
             ],
             "id": "a17a65b3-b73f-49cc-89a5-1a783d2b5fe6",
             "source": {
@@ -1069,7 +1074,7 @@
                   "name": "block"
                 },
                 "sourceMarker": {
-                  "name": ""
+                  "name": "block"
                 },
                 "strokeDasharray": null
               }
@@ -1080,13 +1085,13 @@
             "connector": "smooth",
             "data": {
               "type": "tm.Flow",
-              "name": "Data Flow",
+              "name": "file access",
               "description": "",
               "outOfScope": false,
               "isTrustBoundary": false,
               "reasonOutOfScope": "",
               "hasOpenThreats": false,
-              "isBidirectional": false,
+              "isBidirectional": true,
               "isEncrypted": false,
               "isPublicNetwork": false,
               "protocol": "",
@@ -1094,7 +1099,7 @@
               "trustBoundaryIds": []
             },
             "labels": [
-              "Data Flow"
+              "file access"
             ],
             "id": "6bfdfa35-f7ac-4dcf-9a21-cc5c177739ed",
             "source": {
@@ -1116,7 +1121,7 @@
                   "name": "block"
                 },
                 "sourceMarker": {
-                  "name": ""
+                  "name": "block"
                 },
                 "strokeDasharray": null
               }
@@ -1127,13 +1132,13 @@
             "connector": "smooth",
             "data": {
               "type": "tm.Flow",
-              "name": "Data Flow",
+              "name": "SQL / \nDynamic API",
               "description": "",
               "outOfScope": false,
               "isTrustBoundary": false,
               "reasonOutOfScope": "",
               "hasOpenThreats": false,
-              "isBidirectional": false,
+              "isBidirectional": true,
               "isEncrypted": false,
               "isPublicNetwork": false,
               "protocol": "",
@@ -1141,7 +1146,7 @@
               "trustBoundaryIds": []
             },
             "labels": [
-              "Data Flow"
+              "SQL / \nDynamic API"
             ],
             "id": "ee35ddd5-6f36-4d87-8126-f132d1890909",
             "source": {
@@ -1163,7 +1168,7 @@
                   "name": "block"
                 },
                 "sourceMarker": {
-                  "name": ""
+                  "name": "block"
                 },
                 "strokeDasharray": null
               }
@@ -1174,13 +1179,13 @@
             "connector": "smooth",
             "data": {
               "type": "tm.Flow",
-              "name": "Data Flow",
+              "name": "NoSQL",
               "description": "",
               "outOfScope": false,
               "isTrustBoundary": false,
               "reasonOutOfScope": "",
               "hasOpenThreats": false,
-              "isBidirectional": false,
+              "isBidirectional": true,
               "isEncrypted": false,
               "isPublicNetwork": false,
               "protocol": "",
@@ -1188,7 +1193,7 @@
               "trustBoundaryIds": []
             },
             "labels": [
-              "Data Flow"
+              "NoSQL"
             ],
             "id": "8f3197bb-dea1-44de-8b2a-270e06373fcc",
             "source": {
@@ -1199,7 +1204,16 @@
               "cell": "7dbbd656-1fe5-4c77-a7c6-81a52a56f6a6",
               "port": "64288d56-4f55-4111-a87a-d5e92ea267d4"
             },
-            "vertices": []
+            "vertices": [
+              {
+                "x": 740,
+                "y": 250
+              },
+              {
+                "x": 760,
+                "y": 250
+              }
+            ]
           }
         ]
       }
