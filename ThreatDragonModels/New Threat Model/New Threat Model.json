@@ -858,19 +858,6 @@
               "storesInventory": true,
               "threats": [
                 {
-                  "id": "e6939e65-e778-4899-8d19-0111ea410570",
-                  "title": "New STRIDE threat",
-                  "status": "Open",
-                  "severity": "TBD",
-                  "type": "Tampering",
-                  "description": "Provide a description for this threat",
-                  "mitigation": "Provide remediation for this threat or a reason if status is N/A",
-                  "modelType": "STRIDE",
-                  "new": true,
-                  "number": 10,
-                  "score": ""
-                },
-                {
                   "id": "61db8f6b-530a-4859-a86d-f20772c4e743",
                   "title": "Upload de fichier malveillant",
                   "status": "Open",
@@ -1593,6 +1580,6 @@
     ],
     "diagramTop": 2,
     "reviewer": "",
-    "threatTop": 20
+    "threatTop": 21
   }
 }
