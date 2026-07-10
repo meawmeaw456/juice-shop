@@ -103,8 +103,8 @@
           },
           {
             "position": {
-              "x": 61.25,
-              "y": 70
+              "x": 0,
+              "y": 60
             },
             "size": {
               "width": 150,
@@ -1383,54 +1383,8 @@
             "shape": "flow",
             "attrs": {
               "line": {
-                "stroke": "#333333",
-                "targetMarker": {
-                  "name": "block"
-                },
-                "sourceMarker": {
-                  "name": "block"
-                },
-                "strokeDasharray": null
-              }
-            },
-            "width": 200,
-            "height": 100,
-            "zIndex": 10,
-            "connector": "smooth",
-            "data": {
-              "type": "tm.Flow",
-              "name": "log in ",
-              "description": "using credentials and 2FA\nif enabled",
-              "outOfScope": false,
-              "isTrustBoundary": false,
-              "reasonOutOfScope": "",
-              "hasOpenThreats": false,
-              "isBidirectional": true,
-              "isEncrypted": false,
-              "isPublicNetwork": false,
-              "protocol": "http",
-              "threats": [],
-              "trustBoundaryIds": []
-            },
-            "labels": [
-              "log in "
-            ],
-            "id": "4158918e-49e3-4a91-8ce5-7abdba03efb1",
-            "source": {
-              "cell": "9157e6d4-0ae6-43e1-8d74-47960544981a",
-              "port": "333596f4-329f-42ea-9b20-e587b48deb01"
-            },
-            "target": {
-              "cell": "792000c2-c0fc-4921-a6d4-1da5ad1fc02f",
-              "port": "cd482f6f-6030-4bf7-9379-e0db88a3ee6f"
-            },
-            "vertices": []
-          },
-          {
-            "shape": "flow",
-            "attrs": {
-              "line": {
-                "stroke": "#333333",
+                "stroke": "red",
+                "strokeWidth": 2.5,
                 "targetMarker": {
                   "name": "block"
                 },
@@ -1451,13 +1405,32 @@
               "outOfScope": false,
               "isTrustBoundary": false,
               "reasonOutOfScope": "",
-              "hasOpenThreats": false,
+              "hasOpenThreats": true,
               "isBidirectional": true,
               "isEncrypted": true,
               "isPublicNetwork": false,
               "protocol": "https",
-              "threats": [],
-              "trustBoundaryIds": []
+              "threats": [
+                {
+                  "id": "63af47a6-029c-4e00-ad69-38df9535c92c",
+                  "title": "Vol du code d'autorisation OAuth",
+                  "status": "Open",
+                  "severity": "Medium",
+                  "type": "Information disclosure",
+                  "description": "Le code d'autorisation OAuth peut être intercepté dans les logs ou l'historique du navigateur si mal géré",
+                  "mitigation": "Utiliser PKCE (Proof Key for Code Exchange),code d'autorisation à usage unique\n",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 44,
+                  "score": ""
+                }
+              ],
+              "trustBoundaryIds": [],
+              "threatFrequency": {
+                "tampering": 0,
+                "informationDisclosure": 1,
+                "denialOfService": 0
+              }
             },
             "labels": [
               "authentication SSO"
@@ -1822,12 +1795,101 @@
                 "y": 250
               }
             ]
+          },
+          {
+            "shape": "flow",
+            "attrs": {
+              "line": {
+                "stroke": "red",
+                "strokeWidth": 2.5,
+                "targetMarker": {
+                  "name": "block"
+                },
+                "sourceMarker": {
+                  "name": "block"
+                },
+                "strokeDasharray": null
+              }
+            },
+            "width": 200,
+            "height": 100,
+            "zIndex": 10,
+            "connector": "smooth",
+            "data": {
+              "type": "tm.Flow",
+              "name": "log in ",
+              "description": "using credentials and 2FA\nif enabled",
+              "outOfScope": false,
+              "isTrustBoundary": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": true,
+              "isBidirectional": true,
+              "isEncrypted": false,
+              "isPublicNetwork": false,
+              "protocol": "http",
+              "threats": [
+                {
+                  "id": "b06adcf7-d66f-48a3-b354-3514501ccbc9",
+                  "title": "Interception des données en transit (Man-in-the-Middle)",
+                  "status": "Open",
+                  "severity": "High",
+                  "type": "Information disclosure",
+                  "description": "Si la communication se fait en HTTP (pas HTTPS),un attaquant sur le même réseau peut intercepter tout\nle trafic — mots de passe, tokens, données.\n",
+                  "mitigation": "Forcer HTTPS partout\n",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 42,
+                  "score": ""
+                },
+                {
+                  "id": "c9785392-83d6-440d-9c97-69047d2ac972",
+                  "title": "Falsification des requêtes HTTP",
+                  "status": "Open",
+                  "severity": "Medium",
+                  "type": "Tampering",
+                  "description": "Un attaquant peut intercepter et modifier les requêtes HTTP entre le navigateur et le serveur\n",
+                  "mitigation": "HTTPS obligatoire, validation côté serveur\n",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 43,
+                  "score": ""
+                }
+              ],
+              "trustBoundaryIds": [],
+              "threatFrequency": {
+                "tampering": 1,
+                "informationDisclosure": 1,
+                "denialOfService": 0
+              }
+            },
+            "labels": [
+              "log in "
+            ],
+            "id": "4158918e-49e3-4a91-8ce5-7abdba03efb1",
+            "source": {
+              "cell": "9157e6d4-0ae6-43e1-8d74-47960544981a",
+              "port": "333596f4-329f-42ea-9b20-e587b48deb01"
+            },
+            "target": {
+              "cell": "792000c2-c0fc-4921-a6d4-1da5ad1fc02f",
+              "port": "cd482f6f-6030-4bf7-9379-e0db88a3ee6f"
+            },
+            "vertices": [
+              {
+                "x": 240,
+                "y": 100
+              },
+              {
+                "x": 240,
+                "y": 135
+              }
+            ]
           }
         ]
       }
     ],
     "diagramTop": 2,
     "reviewer": "supervisor nadia",
-    "threatTop": 41
+    "threatTop": 44
   }
 }
