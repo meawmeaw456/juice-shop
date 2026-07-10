@@ -218,12 +218,12 @@
               "threats": [
                 {
                   "id": "ece8f330-45a9-4e67-860f-3749ab612144",
-                  "title": "New STRIDE threat",
+                  "title": "Brute force sur le login",
                   "status": "Open",
                   "severity": "High",
                   "type": "Spoofing",
-                  "description": "Usurpation d'un utilisateur (vol/forgeage de session)",
-                  "mitigation": "Validation stricte des jetons/sessions.",
+                  "description": "Essai automatisé de milliers de combinaisons email/mot de passe pour accéder au compte d'un autre.",
+                  "mitigation": "Rate limiting, blocage après X échecs, CAPTCHA, MFA.",
                   "modelType": "STRIDE",
                   "new": false,
                   "number": 1,
@@ -231,21 +231,34 @@
                 },
                 {
                   "id": "279027b0-445e-4b2f-9483-180407e90bc3",
-                  "title": "New STRIDE threat",
+                  "title": "Vol/rejeu de session (Replay)",
                   "status": "Open",
-                  "severity": "Medium",
-                  "type": "Repudiation",
-                  "description": "Répudiation d'actions (manque de traçabilité)",
-                  "mitigation": "Journalisation côté serveur",
+                  "severity": "High",
+                  "type": "Spoofing",
+                  "description": "Interception d'un token JWT valide et réutilisation pour se faire passer pour la victime.",
+                  "mitigation": "JWT à expiration courte, liste de révocation, liaison token->contexte.",
                   "modelType": "STRIDE",
                   "new": false,
                   "number": 2,
                   "score": ""
+                },
+                {
+                  "id": "d1ea162c-92bc-4746-97cb-6b26870cab0c",
+                  "title": "Répudiation d'actions",
+                  "status": "Open",
+                  "severity": "Medium",
+                  "type": "Repudiation",
+                  "description": "Absence de traçabilité fiable côté serveur ; l'utilisateur peut nier ses actions",
+                  "mitigation": "Journalisation côté serveur (qui, quoi, quand).",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 25,
+                  "score": ""
                 }
               ],
               "threatFrequency": {
-                "spoofing": 1,
-                "repudiation": 1
+                "spoofing": 3,
+                "repudiation": 2
               }
             }
           },
@@ -366,20 +379,33 @@
               "threats": [
                 {
                   "id": "b776de74-a2db-41b7-913b-a870817b424e",
-                  "title": "Détournement du flux OAuth",
+                  "title": "Détournement du flux / token OAuth",
                   "status": "Open",
-                  "severity": "Medium",
+                  "severity": "High",
                   "type": "Spoofing",
-                  "description": "URI de redirection mal validée ou absence de paramètre state.",
-                  "mitigation": "Valider les URI de redirection et le paramètre state.",
+                  "description": "Code/token OAuth intercepté pendant la redirection, ou URI de redirection mal validée.",
+                  "mitigation": "PKCE, validation du paramètre state (anti-CSRF), HTTPS sur redirect_uri.",
                   "modelType": "STRIDE",
                   "new": false,
                   "number": 11,
                   "score": ""
+                },
+                {
+                  "id": "52f6fc96-f58d-40fe-b75a-79233e4681e4",
+                  "title": "Phishing (fausse page Google)",
+                  "status": "Open",
+                  "severity": "High",
+                  "type": "Spoofing",
+                  "description": "Fausse page de login Google imitant l'OAuth ; l'utilisateur y saisit ses identifiants",
+                  "mitigation": "Afficher clairement l'URI de redirection, PKCE, sensibilisation.",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 26,
+                  "score": ""
                 }
               ],
               "threatFrequency": {
-                "spoofing": 1,
+                "spoofing": 3,
                 "repudiation": 0
               }
             }
@@ -504,12 +530,12 @@
               "threats": [
                 {
                   "id": "d737cde2-5368-47bd-ae6e-7bb5ae8a7c6d",
-                  "title": "XSS (script injecté)",
+                  "title": "XSS (script injecté ,vol de JWT)",
                   "status": "Open",
                   "severity": "High",
                   "type": "Tampering",
-                  "description": "Du script malveillant s'exécute dans le navigateur (failles XSS présentes dans Juice Shop).",
-                  "mitigation": "Encodage en sortie ; politique CSP.",
+                  "description": "Script injecté (champ recherche/commentaire) qui s'exécute dans le navigateur et peut voler le JWT stocké en localStorage.",
+                  "mitigation": "CSP, encodage en sortie, cookies httpOnly au lieu de localStorage",
                   "modelType": "STRIDE",
                   "new": false,
                   "number": 12,
@@ -517,23 +543,36 @@
                 },
                 {
                   "id": "eee0e900-cfd6-4663-aca5-f99198d488ce",
-                  "title": "Logique/secrets côté client",
+                  "title": "Secrets/logique exposés côté clien",
                   "status": "Open",
                   "severity": "Medium",
                   "type": "Information disclosure",
-                  "description": "Tout ce qui tourne dans le navigateur est visible et modifiable par l'utilisateur.",
-                  "mitigation": "Ne jamais placer un secret ou un contrôle de sécurité uniquement côté client.",
+                  "description": "Tout le code et les données du frontend sont visibles et modifiables ; un secret ou un contrôle de sécurité placé côté client est contournable/lisible.",
+                  "mitigation": "Secrets et contrôles côté serveur ; ne pas stocker de token sensible accessible au JS.",
                   "modelType": "STRIDE",
                   "new": false,
                   "number": 13,
+                  "score": ""
+                },
+                {
+                  "id": "2cf9ad6b-4a22-4143-ae91-8e5c21142bf3",
+                  "title": "Manipulation des requêtes côté client",
+                  "status": "Open",
+                  "severity": "High",
+                  "type": "Tampering",
+                  "description": "L'utilisateur modifie les paramètres d'une requête (prix, quantité, rôle) via les DevTools avant envoi.",
+                  "mitigation": "Toujours valider/autoriser côté serveur ; ne jamais faire confiance au client.",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 27,
                   "score": ""
                 }
               ],
               "threatFrequency": {
                 "spoofing": 0,
-                "tampering": 1,
+                "tampering": 3,
                 "repudiation": 0,
-                "informationDisclosure": 1,
+                "informationDisclosure": 2,
                 "denialOfService": 0,
                 "elevationOfPrivilege": 0
               }
@@ -672,12 +711,12 @@
                 },
                 {
                   "id": "2239f477-04c5-4e9c-9ab2-e91be97d3e49",
-                  "title": "Injection NoSQL (MarsDB)",
+                  "title": "Point d'entrée d'injection NoSQL",
                   "status": "Open",
                   "severity": "High",
                   "type": "Tampering",
-                  "description": "Interaction MarsDB via syntaxe MongoDB ; un opérateur comme $ne permet une manipulation massive de données.",
-                  "mitigation": "Sanitisation des entrées (ex. express-mongo-sanitize).",
+                  "description": "L'API construit des requêtes MarsDB avec des données client non validées (détail au store MarsDB).",
+                  "mitigation": "Validation de type, sanitisation (ex. express-mongo-sanitize)",
                   "modelType": "STRIDE",
                   "new": false,
                   "number": 5,
@@ -685,12 +724,12 @@
                 },
                 {
                   "id": "d737a150-e89c-4d65-aca1-a0aec85598fb",
-                  "title": "Journalisation insuffisante",
+                  "title": "Journalisation d'audit insuffisante",
                   "status": "Open",
                   "severity": "Medium",
                   "type": "Repudiation",
-                  "description": "Actions sensibles non tracées → impossible de prouver qui a fait quoi.",
-                  "mitigation": "Journal d'audit des actions sensibles.",
+                  "description": "Actions sensibles non journalisées avec assez de détail.",
+                  "mitigation": "Journaliser avec timestamp, IP, user ID, action.",
                   "modelType": "STRIDE",
                   "new": false,
                   "number": 6,
@@ -711,25 +750,77 @@
                 },
                 {
                   "id": "48c9dd91-46e7-4670-8fe5-11f952f575fe",
-                  "title": "Déni de service",
+                  "title": "Absence de rate limiting (DoS)",
                   "status": "Open",
-                  "severity": "Medium",
+                  "severity": "High",
                   "type": "Denial of service",
-                  "description": "Épuisement de ressources rendant l'API indisponible.",
-                  "mitigation": "Limitation de débit, timeouts.",
+                  "description": "Aucune limite de requêtes → brute force / saturation possibles.",
+                  "mitigation": "Rate limiter (ex. express-rate-limit), blocage d'IP.",
                   "modelType": "STRIDE",
                   "new": false,
                   "number": 8,
                   "score": ""
+                },
+                {
+                  "id": "0231ea19-abcd-4206-8a58-9c01282b9279",
+                  "title": "Injection SQL sur le login",
+                  "status": "Open",
+                  "severity": "Critical",
+                  "type": "Tampering",
+                  "description": "Login vulnérable à l'injection SQL (' OR '1'='1' --)-> connexion sans mot de passe (effet : contournement d'auth / élévation).",
+                  "mitigation": "Requêtes paramétrées ; ne jamais concaténer d'entrée utilisateur dans le SQL.",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 28,
+                  "score": ""
+                },
+                {
+                  "id": "9c36a44a-716d-4b28-8350-402a6759cb32",
+                  "title": "Autorisation au niveau objet cassée (BOLA)",
+                  "status": "Open",
+                  "severity": "Critical",
+                  "type": "Tampering",
+                  "description": "L'API ne vérifie pas l'appartenance d'une ressource ; un utilisateur modifie les données d'un autre.",
+                  "mitigation": "Vérifier l'ownership ; autorisation au niveau objet.",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 29,
+                  "score": ""
+                },
+                {
+                  "id": "587f0735-78a6-49a9-a683-648bef5a15ca",
+                  "title": "Accès non autorisé à /api/admin",
+                  "status": "Open",
+                  "severity": "Critical",
+                  "type": "Elevation of privilege",
+                  "description": "Les routes admin ne vérifient pas le rôle côté serveur ; un utilisateur normal accède aux fonctions admin",
+                  "mitigation": "Vérifier le rôle côté serveur sur chaque route ; ne pas se fier au rôle envoyé par le client.",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 30,
+                  "score": ""
+                },
+                {
+                  "id": "c0085937-b971-42e3-9410-fda4b26f5865",
+                  "title": "Fuite de données sensibles / stack traces",
+                  "status": "Open",
+                  "severity": "High",
+                  "type": "Information disclosure",
+                  "description": "Réponses d'API renvoyant des champs inutiles (hash de mot de passe, données internes) ou des stack traces en erreur.",
+                  "mitigation": "Filtrer les réponses ; désactiver les stack traces ; gestion d'erreurs propre.",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 31,
+                  "score": ""
                 }
               ],
               "threatFrequency": {
-                "spoofing": 2,
-                "tampering": 1,
-                "repudiation": 1,
-                "informationDisclosure": 1,
-                "denialOfService": 1,
-                "elevationOfPrivilege": 0
+                "spoofing": 3,
+                "tampering": 4,
+                "repudiation": 2,
+                "informationDisclosure": 2,
+                "denialOfService": 2,
+                "elevationOfPrivilege": 1
               }
             }
           },
@@ -861,10 +952,10 @@
                   "id": "61db8f6b-530a-4859-a86d-f20772c4e743",
                   "title": "Upload de fichier malveillant",
                   "status": "Open",
-                  "severity": "TBD",
+                  "severity": "High",
                   "type": "Tampering",
-                  "description": "Dépôt d'un fichier dangereux.",
-                  "mitigation": "Valider type/taille ; exécution désactivée.",
+                  "description": "Upload accepté sans vérifier le vrai type ; un .js/.php déguisé en image.",
+                  "mitigation": "Vérifier le MIME réel, scanner, stocker hors du webroot.",
                   "modelType": "STRIDE",
                   "new": false,
                   "number": 19,
@@ -872,22 +963,48 @@
                 },
                 {
                   "id": "9b8233e4-ffc7-486c-93e2-6f0ad2c406be",
-                  "title": "Traversée de répertoire",
+                  "title": "Path traversal (lecture/écriture hors dossier)",
                   "status": "Open",
-                  "severity": "TBD",
+                  "severity": "High",
                   "type": "Information disclosure",
-                  "description": "Lecture de fichiers hors du dossier prévu.",
-                  "mitigation": "Normaliser et restreindre les chemins.",
+                  "description": "Nom de fichier non sanitisé (../../../etc/passwd) -> lecture de fichiers système.",
+                  "mitigation": "path.basename(), noms générés, jamais le nom fourni par l'utilisateur.",
                   "modelType": "STRIDE",
                   "new": false,
                   "number": 20,
                   "score": ""
+                },
+                {
+                  "id": "99c45b6d-b81b-4ac7-8345-36f697f7b81a",
+                  "title": "Accès direct aux fichiers uploadés",
+                  "status": "Open",
+                  "severity": "Medium",
+                  "type": "Elevation of privilege",
+                  "description": "Fichiers accessibles par URL sans vérification d'authentification.",
+                  "mitigation": "Servir via l'API avec contrôle d'accès.",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 37,
+                  "score": ""
+                },
+                {
+                  "id": "1da836ac-36d4-49f2-8d69-f5d8032a72ba",
+                  "title": "Écriture de fichiers arbitraires",
+                  "status": "Open",
+                  "severity": "High",
+                  "type": "Tampering",
+                  "description": "Écriture avec un nom fourni par l'utilisateur -> écrasement/écriture de code.",
+                  "mitigation": "Noms aléatoires, permissions restreintes sur uploads.",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 38,
+                  "score": ""
                 }
               ],
               "threatFrequency": {
-                "tampering": 1,
+                "tampering": 3,
                 "repudiation": 0,
-                "informationDisclosure": 1,
+                "informationDisclosure": 2,
                 "denialOfService": 0
               }
             }
@@ -1018,12 +1135,12 @@
               "threats": [
                 {
                   "id": "ccd07ef4-fab3-40c6-8fdb-ac71cf1770c5",
-                  "title": "Altération via injection SQL",
+                  "title": "Injection SQL directe",
                   "status": "Open",
-                  "severity": "High",
+                  "severity": "Critical",
                   "type": "Tampering",
-                  "description": "Modification de données via SQL brut non sécurisé.",
-                  "mitigation": "Requêtes paramétrées.",
+                  "description": "Requêtes construites par concaténation → lecture/modification/suppression de toutes les données.",
+                  "mitigation": "Requêtes préparées ; moindre privilège sur la base.",
                   "modelType": "STRIDE",
                   "new": false,
                   "number": 16,
@@ -1031,12 +1148,12 @@
                 },
                 {
                   "id": "9df06696-14d6-410c-9e0d-f62aa2edecb6",
-                  "title": "Lecture de données sensibles",
+                  "title": "Base non chiffrée / données sensibles lisibles",
                   "status": "Open",
                   "severity": "High",
                   "type": "Information disclosure",
-                  "description": "La base contient des identifiants / secrets 2FA.",
-                  "mitigation": "Contrôle d'accès ; chiffrement au repos si pertinent.",
+                  "description": "Fichier SQLite en clair ; contient identifiants et secrets 2FA (totpSecret).",
+                  "mitigation": "Chiffrement (SQLCipher / disque OS) ; contrôle d'accès.",
                   "modelType": "STRIDE",
                   "new": false,
                   "number": 17,
@@ -1044,7 +1161,7 @@
                 },
                 {
                   "id": "44d3d634-1d27-4a38-b2a7-a7b2ec072021",
-                  "title": "Absence de traçabilité",
+                  "title": "Absence de traçabilité des modifications",
                   "status": "Open",
                   "severity": "Low",
                   "type": "Repudiation",
@@ -1054,13 +1171,26 @@
                   "new": false,
                   "number": 18,
                   "score": ""
+                },
+                {
+                  "id": "871a72d4-f12a-4401-8b6a-9e49c049bcbf",
+                  "title": "Absence de sauvegarde",
+                  "status": "Open",
+                  "severity": "Medium",
+                  "type": "Denial of service",
+                  "description": "Pas de stratégie de backup ; suppression irréversible.",
+                  "mitigation": "Sauvegardes régulières, politique de rétention.",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 32,
+                  "score": ""
                 }
               ],
               "threatFrequency": {
-                "tampering": 1,
-                "repudiation": 1,
-                "informationDisclosure": 1,
-                "denialOfService": 0
+                "tampering": 2,
+                "repudiation": 2,
+                "informationDisclosure": 2,
+                "denialOfService": 1
               }
             }
           },
@@ -1190,12 +1320,12 @@
               "threats": [
                 {
                   "id": "7ac1b915-4ff2-4189-9ef3-817882399cd7",
-                  "title": "Injection NoSQL",
+                  "title": "Injection NoSQL (contournement d'auth)",
                   "status": "Open",
-                  "severity": "High",
+                  "severity": "Critical",
                   "type": "Tampering",
-                  "description": "Manipulation de données via opérateurs MongoDB (ex. $ne).",
-                  "mitigation": "Sanitisation des entrées.",
+                  "description": "Objet JavaScript malveillant : {\"email\": {\"$gt\": \"\"}, \"password\": {\"$gt\": \"\"}} → toujours vrai → accès sans mot de passe / extraction massive.",
+                  "mitigation": "Valider le type (string obligatoire) ; rejeter les objets JSON dans les champs string ; schéma de validation strict.",
                   "modelType": "STRIDE",
                   "new": false,
                   "number": 14,
@@ -1213,13 +1343,39 @@
                   "new": false,
                   "number": 15,
                   "score": ""
+                },
+                {
+                  "id": "2607638c-80a5-454a-b6ff-649cf47ad65b",
+                  "title": "Accès non autorisé aux données de session",
+                  "status": "Open",
+                  "severity": "High",
+                  "type": "Information disclosure",
+                  "description": "MarsDB stocke des sessions ; un accès permet de voler des sessions actives et d'usurper des comptes.",
+                  "mitigation": "Chiffrer/limiter les données de session ; expiration automatique.",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 33,
+                  "score": ""
+                },
+                {
+                  "id": "3c1337d2-abd2-4bcc-8da4-39d9bf0870bf",
+                  "title": "saturation de MarsDB",
+                  "status": "Open",
+                  "severity": "Medium",
+                  "type": "Denial of service",
+                  "description": "Base légère sans protection contre les requêtes abusives.",
+                  "mitigation": "Rate limiting, timeouts, surveillance.",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 34,
+                  "score": ""
                 }
               ],
               "threatFrequency": {
-                "tampering": 1,
+                "tampering": 2,
                 "repudiation": 0,
-                "informationDisclosure": 1,
-                "denialOfService": 0
+                "informationDisclosure": 2,
+                "denialOfService": 1
               }
             }
           },
@@ -1364,8 +1520,8 @@
                   "status": "Open",
                   "severity": "Medium",
                   "type": "Tampering",
-                  "description": "Messages modifiés entre client et serveur.",
-                  "mitigation": "TLS + contrôle d'intégrité.",
+                  "description": "Modification des requêtes entre navigateur et serveur si pas de HTTPS.",
+                  "mitigation": "HTTPS + contrôle d'intégrité ; validation côté serveur.",
                   "modelType": "STRIDE",
                   "new": false,
                   "number": 22,
@@ -1373,12 +1529,12 @@
                 },
                 {
                   "id": "79faf41c-3447-4c38-bcf0-216cf2ef3118",
-                  "title": "Interception en transit",
+                  "title": "Interception en transit (MITM)",
                   "status": "Open",
-                  "severity": "Medium",
+                  "severity": "High",
                   "type": "Information disclosure",
-                  "description": "En local vous êtes en HTTP (non chiffré) ; en production il faut TLS.",
-                  "mitigation": "TLS.",
+                  "description": "En HTTP (pas HTTPS), un attaquant sur le réseau intercepte mots de passe, tokens, données.",
+                  "mitigation": "HTTPS partout",
                   "modelType": "STRIDE",
                   "new": false,
                   "number": 23,
@@ -1386,23 +1542,36 @@
                 },
                 {
                   "id": "7e51d7db-913f-4930-9edf-d3a8f127cced",
-                  "title": "Déni de service sur le flux",
+                  "title": "Déni de service sur le canal exposé",
                   "status": "Open",
                   "severity": "Medium",
                   "type": "Denial of service",
-                  "description": "Saturation du canal exposé.",
-                  "mitigation": "Limitation de débit, timeouts.",
+                  "description": "Saturation du flux (REST).",
+                  "mitigation": "Rate limiting, timeouts.",
                   "modelType": "STRIDE",
                   "new": false,
                   "number": 24,
+                  "score": ""
+                },
+                {
+                  "id": "118c8c82-7227-44f5-81a7-be20ce65cbf9",
+                  "title": "Injection de données via l'API",
+                  "status": "Open",
+                  "severity": "High",
+                  "type": "Tampering",
+                  "description": "L'API reçoit des données sans les valider (SQLi, XSS via requêtes API).",
+                  "mitigation": "Valider/sanitiser toutes les entrées côté serveur.",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 39,
                   "score": ""
                 }
               ],
               "trustBoundaryIds": [],
               "threatFrequency": {
-                "tampering": 1,
-                "informationDisclosure": 1,
-                "denialOfService": 1
+                "tampering": 3,
+                "informationDisclosure": 2,
+                "denialOfService": 3
               }
             },
             "labels": [
@@ -1417,16 +1586,6 @@
               "cell": "2d0004e9-fb08-4677-8df0-da9af995f161",
               "port": "4b1b5d09-709d-426a-a212-300c27622d65"
             },
-            "tools": {
-              "items": [
-                "boundary",
-                "button-remove",
-                "vertices",
-                "source-arrowhead",
-                "target-arrowhead"
-              ],
-              "name": null
-            },
             "vertices": [
               {
                 "x": 600,
@@ -1438,7 +1597,8 @@
             "shape": "flow",
             "attrs": {
               "line": {
-                "stroke": "#333333",
+                "stroke": "red",
+                "strokeWidth": 2.5,
                 "targetMarker": {
                   "name": "block"
                 },
@@ -1459,13 +1619,45 @@
               "outOfScope": false,
               "isTrustBoundary": false,
               "reasonOutOfScope": "",
-              "hasOpenThreats": false,
+              "hasOpenThreats": true,
               "isBidirectional": true,
               "isEncrypted": false,
               "isPublicNetwork": false,
               "protocol": "ws",
-              "threats": [],
-              "trustBoundaryIds": []
+              "threats": [
+                {
+                  "id": "7d02b111-816a-4b54-bc5e-e142f6890f3a",
+                  "title": "Déni de service sur le canal exposé",
+                  "status": "Open",
+                  "severity": "Medium",
+                  "type": "Denial of service",
+                  "description": "Saturation du flux (WebSocket)",
+                  "mitigation": "Rate limiting, timeouts.",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 40,
+                  "score": ""
+                },
+                {
+                  "id": "101952fe-ba6e-4884-a06b-7eb2ae232b96",
+                  "title": "Sur-diffusion via socket.io",
+                  "status": "Open",
+                  "severity": "Medium",
+                  "type": "Information disclosure",
+                  "description": "Événements WebSocket diffusés trop largement → données sensibles exposées à d'autres clients.",
+                  "mitigation": "Cibler les événements à l'utilisateur concerné, pas en broadcast global.",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 41,
+                  "score": ""
+                }
+              ],
+              "trustBoundaryIds": [],
+              "threatFrequency": {
+                "tampering": 0,
+                "informationDisclosure": 1,
+                "denialOfService": 1
+              }
             },
             "labels": [
               "socket.io\n (WebSocket)"
@@ -1636,6 +1828,6 @@
     ],
     "diagramTop": 2,
     "reviewer": "",
-    "threatTop": 24
+    "threatTop": 41
   }
 }
