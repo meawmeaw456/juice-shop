@@ -1,0 +1,29 @@
+name: devsecops_pipeline
+
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - 'monitoring/grafana_dashboard.json'
+      - 'screenshots/**'
+  pull_request:
+    branches:
+      - master
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - 'monitoring/grafana_dashboard.json'
+      - 'screenshots/**'
+
+jobs:
+  build-image:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  #v7.0.0
+
+      - name: Build Docker Image
+        run: docker build -t juice-shop:ci .
