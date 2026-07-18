@@ -27,3 +27,28 @@ jobs:
 
       - name: Build Docker Image
         run: docker build -t juice-shop:ci .
+  semgrep-sast:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write       
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  #v7.0.0
+
+      - name: Set up Python
+        uses: actions/setup-python@9513afd82fbc900d13362cdd4fcdab0538f5124e   #v6.0.0
+        with:
+          python-version: '3.x'
+
+      - name: Install Semgrep
+        run: pip install semgrep
+
+      - name: Run Semgrep (SARIF)
+        run: semgrep scan --config auto --sarif --output semgrep.sarif
+        continue-on-error: true      
+
+      - name: Upload SARIF to Security tab
+        uses: github/codeql-action/upload-sarif@7188fc363630916deb702c7fdcf4e481b751f97a #v4.37.1
+        with:
+          sarif_file: semgrep.sarif
