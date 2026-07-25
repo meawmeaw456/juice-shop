@@ -119,10 +119,11 @@ jobs:
 
       - name: Reimport Semgrep
         run: |
-          curl -sS -X POST "${{ secrets.DEFECTDOJO_URL }}/api/v2/reimport-scan/" \
+          curl -sS -f -X POST "${{ secrets.DEFECTDOJO_URL }}/api/v2/reimport-scan/" \
             -H "Authorization: Token ${{ secrets.DEFECTDOJO_TOKEN }}" \
             -F "scan_type=SARIF" \
-            -F "engagement=1" \
+            -F "product_name=OWASP Juice Shop" \
+            -F "engagement_name=SAST + SCA" \
             -F "test_title=Semgrep SAST" \
             -F "auto_create_context=true" \
             -F "close_old_findings=true" \
@@ -131,10 +132,11 @@ jobs:
 
       - name: Reimport Trivy image
         run: |
-          curl -sS -X POST "${{ secrets.DEFECTDOJO_URL }}/api/v2/reimport-scan/" \
+          curl -sS -f -X POST "${{ secrets.DEFECTDOJO_URL }}/api/v2/reimport-scan/" \
             -H "Authorization: Token ${{ secrets.DEFECTDOJO_TOKEN }}" \
             -F "scan_type=SARIF" \
-            -F "engagement=1" \
+            -F "product_name=OWASP Juice Shop" \
+            -F "engagement_name=SAST + SCA" \
             -F "test_title=Trivy Image" \
             -F "auto_create_context=true" \
             -F "close_old_findings=true" \
@@ -143,13 +145,13 @@ jobs:
 
       - name: Reimport Trivy filesystem
         run: |
-          curl -sS -X POST "${{ secrets.DEFECTDOJO_URL }}/api/v2/reimport-scan/" \
+          curl -sS -f -X POST "${{ secrets.DEFECTDOJO_URL }}/api/v2/reimport-scan/" \
             -H "Authorization: Token ${{ secrets.DEFECTDOJO_TOKEN }}" \
             -F "scan_type=SARIF" \
-            -F "engagement=1" \
+            -F "product_name=OWASP Juice Shop" \
+            -F "engagement_name=SAST + SCA" \
             -F "test_title=Trivy Filesystem" \
             -F "auto_create_context=true" \
             -F "close_old_findings=true" \
             -F "minimum_severity=Info" \
             -F "file=@sarifs/trivy-fs-sarif/trivy-fs.sarif"
-
