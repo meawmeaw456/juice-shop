@@ -83,7 +83,7 @@ jobs:
         run: pip install semgrep
 
       - name: Run Semgrep (SARIF)
-        run: semgrep scan --config p/owasp-top-ten --sarif --output semgrep.sarif
+        run: semgrep scan --config p/owasp-top-ten --exclude='*.spec.ts' --exclude='*.test.ts' --exclude='test' --exclude='cypress' --sarif --output semgrep.sarif
         continue-on-error: true   
         
       - name: Upload SARIF to Security tab
