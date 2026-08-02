@@ -65,6 +65,16 @@ jobs:
           name: sbom-cyclonedx
           path: sbom.cdx.json
           
+      - name: Trivy Quality Gate (blocks on CRITICAL/HIGH fixable)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  #v0.36.0
+        with:
+          scan-type: 'image'
+          image-ref: 'juice-shop:ci'
+          format: 'table'
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+          
   semgrep-sast:
     runs-on: ubuntu-latest
     permissions:
