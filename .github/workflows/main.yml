@@ -104,9 +104,13 @@ jobs:
       - name: Install Semgrep
         run: pip install semgrep
 
-      - name: Run Semgrep (SARIF)
+      - name: Run Semgrep (SARIF for Security tab)
         run: semgrep scan --config p/owasp-top-ten --exclude='*.spec.ts' --exclude='*.test.ts' --exclude='test' --exclude='cypress' --sarif --output semgrep.sarif
         continue-on-error: true   
+
+      - name: Run Semgrep (JSON for DefectDojo)
+        run: semgrep scan --config p/owasp-top-ten --exclude='*.spec.ts' --exclude='*.test.ts' --exclude='test' --exclude='cypress' --json --output semgrep.json
+        continue-on-error: true
         
       - name: Upload SARIF to Security tab
         uses: github/codeql-action/upload-sarif@7188fc363630916deb702c7fdcf4e481b751f97a #v4.37.1
@@ -118,6 +122,12 @@ jobs:
         with:
           name: semgrep-sarif
           path: semgrep.sarif
+
+      - name: Upload Semgrep JSON as artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  #v7.0.1
+        with:
+          name: semgrep-json
+          path: semgrep.json
 
       - name: Semgrep Advisory (shows WARNING/INFO, does not block)
         run: semgrep scan --config p/owasp-top-ten --exclude='*.spec.ts' --exclude='*.test.ts' --exclude='test' --exclude='cypress' --exclude='.github' --exclude='data/static/codefixes' --severity WARNING --severity INFO
@@ -199,14 +209,14 @@ jobs:
         run: |
           curl -sS -f -X POST "${{ secrets.DEFECTDOJO_URL }}/api/v2/reimport-scan/" \
             -H "Authorization: Token ${{ secrets.DEFECTDOJO_TOKEN }}" \
-            -F "scan_type=SARIF" \
+            -F "scan_type=Semgrep JSON Report" \
             -F "product_name=OWASP Juice Shop" \
             -F "engagement_name=Automated Scans" \
             -F "test_title=Semgrep SAST" \
             -F "auto_create_context=true" \
             -F "close_old_findings=true" \
             -F "minimum_severity=Info" \
-            -F "file=@sarifs/semgrep-sarif/semgrep.sarif"
+            -F "file=@sarifs/semgrep-json/semgrep.json"
 
       - name: Reimport Trivy image
         run: |
