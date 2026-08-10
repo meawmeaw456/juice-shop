@@ -18,15 +18,20 @@ on:
       - 'monitoring/grafana_dashboard.json'
       - 'screenshots/**'
 
+permissions: {} #aucun droit par défaut et chaque job demande le stricte necessaire
+
 jobs:
   build-and-scan-image:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
     permissions:
       contents: read
       security-events: write
     steps:
       - name: Checkout Repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  #v7.0.0
+        with:
+          persist-credentials: false
 
       - name: Build Docker Image
         run: docker build -t juice-shop:ci .
@@ -88,13 +93,16 @@ jobs:
           ignore-unfixed: true
           
   semgrep-sast:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
     permissions:
       contents: read
       security-events: write       
     steps:
       - name: Checkout Repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  #v7.0.0
+        with:
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c  #v6.0.0
@@ -137,13 +145,16 @@ jobs:
         run: semgrep scan --config p/owasp-top-ten --exclude='*.spec.ts' --exclude='*.test.ts' --exclude='test' --exclude='cypress' --exclude='.github' --exclude='data/static/codefixes' --severity ERROR --error
  
   trivy-fs:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     permissions:
       contents: read
       security-events: write
     steps:
       - name: Checkout Repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  #v7.0.0
+        with:
+          persist-credentials: false
 
       - name: Run Trivy filesystem scan (secrets)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25   #v0.36.0
@@ -168,13 +179,16 @@ jobs:
 
           
   trivy-config:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     permissions:
       contents: read
       security-events: write
     steps:
       - name: Checkout Repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  #v7.0.0
+        with:
+          persist-credentials: false
 
       - name: Run Trivy config scan (IaC / Dockerfile)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  #v0.36.0
@@ -196,9 +210,16 @@ jobs:
           path: trivy-config.sarif
         
   import-defectdojo:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     needs: [build-and-scan-image, semgrep-sast, trivy-fs, trivy-config]
     if: always()
+    permissions: {}
+
+    env: 
+      DEFECTDOJO_URL: ${{ secrets.DEFECTDOJO_URL }}
+      DEFECTDOJO_TOKEN: ${{ secrets.DEFECTDOJO_TOKEN }}
+      
     steps:
       - name: Download all SARIF artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c   #v8.0.1
@@ -207,8 +228,8 @@ jobs:
 
       - name: Reimport Semgrep
         run: |
-          curl -sS -f -X POST "${{ secrets.DEFECTDOJO_URL }}/api/v2/reimport-scan/" \
-            -H "Authorization: Token ${{ secrets.DEFECTDOJO_TOKEN }}" \
+          curl -sS -f -X POST "$DEFECTDOJO_URL/api/v2/reimport-scan/" \
+            -H "Authorization: Token $DEFECTDOJO_TOKEN" \
             -F "scan_type=Semgrep JSON Report" \
             -F "product_name=OWASP Juice Shop" \
             -F "engagement_name=Automated Scans" \
@@ -220,8 +241,8 @@ jobs:
 
       - name: Reimport Trivy image
         run: |
-          curl -sS -f -X POST "${{ secrets.DEFECTDOJO_URL }}/api/v2/reimport-scan/" \
-            -H "Authorization: Token ${{ secrets.DEFECTDOJO_TOKEN }}" \
+          curl -sS -f -X POST "$DEFECTDOJO_URL/api/v2/reimport-scan/" \
+            -H "Authorization: Token $DEFECTDOJO_TOKEN" \
             -F "scan_type=SARIF" \
             -F "product_name=OWASP Juice Shop" \
             -F "engagement_name=Automated Scans" \
@@ -233,8 +254,8 @@ jobs:
 
       - name: Reimport Trivy filesystem
         run: |
-          curl -sS -f -X POST "${{ secrets.DEFECTDOJO_URL }}/api/v2/reimport-scan/" \
-            -H "Authorization: Token ${{ secrets.DEFECTDOJO_TOKEN }}" \
+          curl -sS -f -X POST "$DEFECTDOJO_URL/api/v2/reimport-scan/" \
+            -H "Authorization: Token $DEFECTDOJO_TOKEN" \
             -F "scan_type=SARIF" \
             -F "product_name=OWASP Juice Shop" \
             -F "engagement_name=Automated Scans" \
@@ -246,8 +267,8 @@ jobs:
 
       - name: Reimport Trivy config
         run: |
-          curl -sS -f -X POST "${{ secrets.DEFECTDOJO_URL }}/api/v2/reimport-scan/" \
-            -H "Authorization: Token ${{ secrets.DEFECTDOJO_TOKEN }}" \
+          curl -sS -f -X POST "$DEFECTDOJO_URL/api/v2/reimport-scan/" \
+            -H "Authorization: Token $DEFECTDOJO_TOKEN" \
             -F "scan_type=SARIF" \
             -F "product_name=OWASP Juice Shop" \
             -F "engagement_name=Automated Scans" \
