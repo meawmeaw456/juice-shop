@@ -4,5 +4,5 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-      cooldown:
+    cooldown:
       default-days: 7
