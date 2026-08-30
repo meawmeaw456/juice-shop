@@ -2,25 +2,32 @@ name: devsecops_pipeline
 
 on:
   push:
-    branches:
-      - master
+    branches: [ master ]
     paths-ignore:
       - '**.md'
       - 'LICENSE'
       - 'monitoring/grafana_dashboard.json'
       - 'screenshots/**'
   pull_request:
-    branches:
-      - master
+    branches: [ master ]
     paths-ignore:
       - '**.md'
       - 'LICENSE'
       - 'monitoring/grafana_dashboard.json'
       - 'screenshots/**'
 
+# annuler un run précédent encore en cours sur la même ref (PR ou branche)
+
+concurrency: 
+  group: ${{ github.workflow}}-${{ github.ref}}
+  cancel-in-progress: true
+  
 permissions: {} #aucun droit par défaut et chaque job demande le stricte necessaire
 
 jobs:
+
+#BUILD+SCAN IMAGE+SBOM+GATE VULN
+
   build-and-scan-image:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -42,7 +49,7 @@ jobs:
       - name: Build Docker Image
         run: docker build -t juice-shop:ci .
         
-      - name: Run Trivy Image Scan
+      - name: Run Trivy Image Scan(SARIF)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  #v0.36.0
         with:
           scan-type: 'image'
@@ -55,6 +62,8 @@ jobs:
         uses: github/codeql-action/upload-sarif@7188fc363630916deb702c7fdcf4e481b751f97a  #v4.37.1
         with:
           sarif_file: 'trivy-image.sarif'
+          category: trivy-image
+        continue-on-error: true
 
       - name: Upload Trivy image SARIF as artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  #v7.0.1
@@ -75,17 +84,6 @@ jobs:
         with:
           name: sbom-cyclonedx
           path: sbom.cdx.json
-
-      - name: Trivy Advisory (shows MEDIUM/LOW, does not block)
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  #v0.36.0
-        with:
-          scan-type: 'image'
-          image-ref: 'juice-shop:ci'
-          scanners: 'vuln'
-          format: 'table'
-          exit-code: '0'
-          severity: 'MEDIUM,LOW'
-          ignore-unfixed: true
           
       - name: Trivy Quality Gate (blocks on CRITICAL/HIGH fixable)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  #v0.36.0
@@ -136,6 +134,8 @@ jobs:
         uses: github/codeql-action/upload-sarif@7188fc363630916deb702c7fdcf4e481b751f97a #v4.37.1
         with:
           sarif_file: semgrep.sarif
+          category: semgrep
+        continue-on-error: true
           
       - name: Upload Semgrep SARIF as artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  #v7.0.1
@@ -155,7 +155,9 @@ jobs:
 
       - name: Semgrep Quality Gate (blocks on ERROR in prod code)
         run: semgrep scan --config p/owasp-top-ten --exclude='*.spec.ts' --exclude='*.test.ts' --exclude='test' --exclude='cypress' --exclude='.github' --exclude='data/static/codefixes' --severity ERROR --error
- 
+
+  # TRIVY FILESYSTEM (secrets)
+  
   trivy-fs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -187,6 +189,8 @@ jobs:
         uses: github/codeql-action/upload-sarif@7188fc363630916deb702c7fdcf4e481b751f97a  #v4.37.1
         with:
           sarif_file: 'trivy-fs.sarif'
+          category: trivy-fs
+        continue-on-error: true
 
       - name: Upload Trivy SARIF as artifact
 
@@ -194,7 +198,8 @@ jobs:
         with:
           name: trivy-fs-sarif
           path: trivy-fs.sarif
-
+          
+ # TRIVY CONFIG (IaC / Dockerfile)
           
   trivy-config:
     runs-on: ubuntu-24.04
@@ -226,22 +231,28 @@ jobs:
         uses: github/codeql-action/upload-sarif@7188fc363630916deb702c7fdcf4e481b751f97a  #v4.37.1
         with:
           sarif_file: 'trivy-config.sarif'
+          category: trivy-config
+        continue-on-error: true
 
       - name: Upload Trivy config SARIF as artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  #v7.0.1
         with:
           name: trivy-config-sarif
           path: trivy-config.sarif
-        
+
+# IMPORT DEFECTDOJO
+
   import-defectdojo:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     needs: [build-and-scan-image, semgrep-sast, trivy-fs, trivy-config]
-    if: always()
-    permissions: {}
+    
+    if: ${{ github.event_name == 'push' && !cancelled() }}
+    permissions:
+      contents: read
 
     env: 
-      DEFECTDOJO_URL: ${{ secrets.DEFECTDOJO_URL }}
+      DEFECTDOJO_URL: ${{ secrets.DEFECTDOJO_URL || 'https://defectdojo-nginx-production.up.railway.app/' }}
       DEFECTDOJO_TOKEN: ${{ secrets.DEFECTDOJO_TOKEN }}
       
     steps:
@@ -250,60 +261,95 @@ jobs:
         uses: step-security/harden-runner@b09bb98e06d4d774595224525879c09bc6e98c40  # v2.20.1
         with:
           egress-policy: audit
+
+      - name: Guard:token DefectDojo présent ?
+        id: guard
+        run: |
+          if [ -z "$DEFECTDOJO_TOKEN" ]; then
+            echo "::warning::DEFECTDOJO_TOKEN absent (secret non configuré) — import sauté."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
           
       - name: Download all SARIF artifacts
+        if: steps.guard.outputs.enabled == 'true'
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c   #v8.0.1
         with:
           path: sarifs
 
       - name: Reimport Semgrep
+        if: steps.guard.outputs.enabled == 'true'
         run: |
-          curl -sS -f -X POST "$DEFECTDOJO_URL/api/v2/reimport-scan/" \
-            -H "Authorization: Token $DEFECTDOJO_TOKEN" \
-            -F "scan_type=Semgrep JSON Report" \
-            -F "product_name=OWASP Juice Shop" \
-            -F "engagement_name=Automated Scans" \
-            -F "test_title=Semgrep SAST" \
-            -F "auto_create_context=true" \
-            -F "close_old_findings=true" \
-            -F "minimum_severity=Info" \
-            -F "file=@sarifs/semgrep-json/semgrep.json"
+          f=sarifs/semgrep-json/semgrep.json
+          if [ -f "$f" ]; then
+            curl -sS -f -X POST "$DEFECTDOJO_URL/api/v2/reimport-scan/" \
+              -H "Authorization: Token $DEFECTDOJO_TOKEN" \
+              -F "scan_type=Semgrep JSON Report" \
+              -F "product_name=OWASP Juice Shop" \
+              -F "engagement_name=Automated Scans" \
+              -F "test_title=Semgrep SAST" \
+              -F "auto_create_context=true" \
+              -F "close_old_findings=true" \
+              -F "minimum_severity=Info" \
+              -F "file=@$f"
+          else
+            echo "::warning::$f absent — import Semgrep sauté."
+          fi
 
       - name: Reimport Trivy image
+        if: steps.guard.outputs.enabled == 'true'
         run: |
-          curl -sS -f -X POST "$DEFECTDOJO_URL/api/v2/reimport-scan/" \
-            -H "Authorization: Token $DEFECTDOJO_TOKEN" \
-            -F "scan_type=SARIF" \
-            -F "product_name=OWASP Juice Shop" \
-            -F "engagement_name=Automated Scans" \
-            -F "test_title=Trivy Image" \
-            -F "auto_create_context=true" \
-            -F "close_old_findings=true" \
-            -F "minimum_severity=Info" \
-            -F "file=@sarifs/trivy-image-sarif/trivy-image.sarif"
+          f=sarifs/trivy-image-sarif/trivy-image.sarif
+          if [ -f "$f" ]; then
+            curl -sS -f -X POST "$DEFECTDOJO_URL/api/v2/reimport-scan/" \
+              -H "Authorization: Token $DEFECTDOJO_TOKEN" \
+              -F "scan_type=SARIF" \
+              -F "product_name=OWASP Juice Shop" \
+              -F "engagement_name=Automated Scans" \
+              -F "test_title=Trivy Image" \
+              -F "auto_create_context=true" \
+              -F "close_old_findings=true" \
+              -F "minimum_severity=Info" \
+              -F "file=@$f"
+          else
+            echo "::warning::$f absent — import Trivy image sauté."
+          fi
 
       - name: Reimport Trivy filesystem
+        if: steps.guard.outputs.enabled == 'true'
         run: |
-          curl -sS -f -X POST "$DEFECTDOJO_URL/api/v2/reimport-scan/" \
-            -H "Authorization: Token $DEFECTDOJO_TOKEN" \
-            -F "scan_type=SARIF" \
-            -F "product_name=OWASP Juice Shop" \
-            -F "engagement_name=Automated Scans" \
-            -F "test_title=Trivy Filesystem" \
-            -F "auto_create_context=true" \
-            -F "close_old_findings=true" \
-            -F "minimum_severity=Info" \
-            -F "file=@sarifs/trivy-fs-sarif/trivy-fs.sarif"
+          f=sarifs/trivy-fs-sarif/trivy-fs.sarif
+          if [ -f "$f" ]; then
+            curl -sS -f -X POST "$DEFECTDOJO_URL/api/v2/reimport-scan/" \
+              -H "Authorization: Token $DEFECTDOJO_TOKEN" \
+              -F "scan_type=SARIF" \
+              -F "product_name=OWASP Juice Shop" \
+              -F "engagement_name=Automated Scans" \
+              -F "test_title=Trivy Filesystem" \
+              -F "auto_create_context=true" \
+              -F "close_old_findings=true" \
+              -F "minimum_severity=Info" \
+              -F "file=@$f"
+          else
+            echo "::warning::$f absent — import Trivy filesystem sauté."
+          fi
 
       - name: Reimport Trivy config
+        if: steps.guard.outputs.enabled == 'true'
         run: |
-          curl -sS -f -X POST "$DEFECTDOJO_URL/api/v2/reimport-scan/" \
-            -H "Authorization: Token $DEFECTDOJO_TOKEN" \
-            -F "scan_type=SARIF" \
-            -F "product_name=OWASP Juice Shop" \
-            -F "engagement_name=Automated Scans" \
-            -F "test_title=Trivy Config" \
-            -F "auto_create_context=true" \
-            -F "close_old_findings=true" \
-            -F "minimum_severity=Info" \
-            -F "file=@sarifs/trivy-config-sarif/trivy-config.sarif"  
+          f=sarifs/trivy-config-sarif/trivy-config.sarif
+          if [ -f "$f" ]; then
+            curl -sS -f -X POST "$DEFECTDOJO_URL/api/v2/reimport-scan/" \
+              -H "Authorization: Token $DEFECTDOJO_TOKEN" \
+              -F "scan_type=SARIF" \
+              -F "product_name=OWASP Juice Shop" \
+              -F "engagement_name=Automated Scans" \
+              -F "test_title=Trivy Config" \
+              -F "auto_create_context=true" \
+              -F "close_old_findings=true" \
+              -F "minimum_severity=Info" \
+              -F "file=@$f"
+          else
+            echo "::warning::$f absent — import Trivy config sauté."
+          fi
