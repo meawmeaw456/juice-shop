@@ -252,7 +252,7 @@ jobs:
       contents: read
 
     env: 
-      DEFECTDOJO_URL: ${{ secrets.DEFECTDOJO_URL || 'https://defectdojo-nginx-production.up.railway.app/' }}
+      DEFECTDOJO_URL: ${{ secrets.DEFECTDOJO_URL }}
       DEFECTDOJO_TOKEN: ${{ secrets.DEFECTDOJO_TOKEN }}
       
     steps:
