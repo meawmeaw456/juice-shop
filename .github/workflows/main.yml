@@ -1,32 +1,52 @@
+# =============================================================================
+# DevSecOps pipeline — OWASP Juice Shop
+#
+# ONE pipeline, ONE quality gate.
+#   Scans run in parallel (image + SBOM, SAST, secrets, IaC/config) and only
+#   upload reports. A single `quality-gate` job then evaluates every policy in
+#   one place and decides:  PASS = READY  /  FAIL = NOT READY FOR DEPLOYMENT.
+#   Findings are also imported into DefectDojo (source of truth for SecureFlow).
+#
+# To reuse in another project, edit only the `env:` block below and the branch
+# names under `on:` (see README.md).
+# =============================================================================
+
 name: devsecops_pipeline
 
 on:
   push:
     branches: [ master ]
-    paths-ignore:
-      - '**.md'
-      - 'LICENSE'
-      - 'monitoring/grafana_dashboard.json'
-      - 'screenshots/**'
+    paths-ignore: ['**.md', 'LICENSE', 'monitoring/grafana_dashboard.json', 'screenshots/**']
+    
   pull_request:
     branches: [ master ]
-    paths-ignore:
-      - '**.md'
-      - 'LICENSE'
-      - 'monitoring/grafana_dashboard.json'
-      - 'screenshots/**'
+    paths-ignore: ['**.md', 'LICENSE', 'monitoring/grafana_dashboard.json', 'screenshots/**']
 
-# annuler un run précédent encore en cours sur la même ref (PR ou branche)
+# ----- EDIT HERE to reuse for another project -----
+env:
+  IMAGE_REF: juice-shop:ci            # image tag to build & scan
+  DOCKERFILE: Dockerfile              # path to the Dockerfile
+  DD_PRODUCT: "OWASP Juice Shop"      # DefectDojo product name
+  DD_ENGAGEMENT: "Automated Scans"    # DefectDojo engagement name
+# --------------------------------------------------
+
+
+
+# Cancel a previous run still in progress on the same ref (PR or branch)
 
 concurrency: 
   group: ${{ github.workflow}}-${{ github.ref}}
   cancel-in-progress: true
-  
-permissions: {} #aucun droit par défaut et chaque job demande le stricte necessaire
+
+# No permissions by default; each job requests the strict minimum
+
+permissions: {}
 
 jobs:
 
-#BUILD+SCAN IMAGE+SBOM+GATE VULN
+  # ---------------------------------------------------------------------------
+  # 1. Container image: build -> Trivy vuln scan (SARIF) -> CycloneDX SBOM
+  # ---------------------------------------------------------------------------
 
   build-and-scan-image:
     runs-on: ubuntu-24.04
@@ -34,6 +54,7 @@ jobs:
     permissions:
       contents: read
       security-events: write
+      
     steps:
     
       - name: Harden Runner
@@ -47,35 +68,41 @@ jobs:
           persist-credentials: false
 
       - name: Build Docker Image
-        run: docker build -t juice-shop:ci .
+        run: docker build -t "${{ env.IMAGE_REF }}" -f "${{ env.DOCKERFILE }}" .
+
+       # Scan only — the single gate at the end decides pass/fail.
         
       - name: Run Trivy Image Scan(SARIF)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  #v0.36.0
         with:
           scan-type: 'image'
-          image-ref: 'juice-shop:ci'
+          image-ref: ${{ env.IMAGE_REF }}
           format: 'sarif'
           output: 'trivy-image.sarif'
           ignore-unfixed: true
           
       - name: Upload Trivy image SARIF to Security tab
+        if: always()
         uses: github/codeql-action/upload-sarif@7188fc363630916deb702c7fdcf4e481b751f97a  #v4.37.1
+        continue-on-error: true
         with:
           sarif_file: 'trivy-image.sarif'
           category: trivy-image
-        continue-on-error: true
+       
 
       - name: Upload Trivy image SARIF as artifact
+        if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  #v7.0.1
         with:
           name: trivy-image-sarif
           path: trivy-image.sarif
+          if-no-files-found: error
 
       - name: Generate CycloneDX SBOM from image
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  #v0.36.0
         with:
           scan-type: 'image'
-          image-ref: 'juice-shop:ci'
+          image-ref: ${{ env.IMAGE_REF }}
           format: 'cyclonedx'
           output: 'sbom.cdx.json'
 
@@ -84,17 +111,11 @@ jobs:
         with:
           name: sbom-cyclonedx
           path: sbom.cdx.json
-          
-      - name: Trivy Quality Gate (blocks on CRITICAL/HIGH fixable)
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  #v0.36.0
-        with:
-          scan-type: 'image'
-          image-ref: 'juice-shop:ci'
-          scanners: 'vuln'
-          format: 'table'
-          exit-code: '1'
-          severity: 'CRITICAL,HIGH'
-          ignore-unfixed: true
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # 2. SAST (Semgrep) — one scan, emits SARIF + JSON
+  # ---------------------------------------------------------------------------
           
   semgrep-sast:
     runs-on: ubuntu-24.04
@@ -122,41 +143,43 @@ jobs:
       - name: Install Semgrep
         run: pip install semgrep
 
-      - name: Run Semgrep (SARIF for Security tab)
-        run: semgrep scan --config p/owasp-top-ten --exclude='*.spec.ts' --exclude='*.test.ts' --exclude='test' --exclude='cypress' --sarif --output semgrep.sarif
-        continue-on-error: true   
-
-      - name: Run Semgrep (JSON for DefectDojo)
-        run: semgrep scan --config p/owasp-top-ten --exclude='*.spec.ts' --exclude='*.test.ts' --exclude='test' --exclude='cypress' --json --output semgrep.json
+      - name: Run Semgrep (SARIF + JSON)
         continue-on-error: true
+        run: |
+          semgrep scan \
+            --config p/owasp-top-ten \
+            --exclude='*.spec.ts' \
+            --exclude='*.test.ts' \
+            --exclude='test' \
+            --exclude='cypress' \
+            --exclude='.github' \
+            --exclude='data/static/codefixes' \
+            --sarif-output=semgrep.sarif \
+            --json-output=semgrep.json
+            
         
       - name: Upload SARIF to Security tab
+        if: always()
         uses: github/codeql-action/upload-sarif@7188fc363630916deb702c7fdcf4e481b751f97a #v4.37.1
+        continue-on-error: true
         with:
           sarif_file: semgrep.sarif
           category: semgrep
-        continue-on-error: true
+      
           
-      - name: Upload Semgrep SARIF as artifact
+      - name: Upload Semgrep reports artifact
+        if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  #v7.0.1
         with:
-          name: semgrep-sarif
-          path: semgrep.sarif
-
-      - name: Upload Semgrep JSON as artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  #v7.0.1
-        with:
-          name: semgrep-json
-          path: semgrep.json
-
-      - name: Semgrep Advisory (shows WARNING/INFO, does not block)
-        run: semgrep scan --config p/owasp-top-ten --exclude='*.spec.ts' --exclude='*.test.ts' --exclude='test' --exclude='cypress' --exclude='.github' --exclude='data/static/codefixes' --severity WARNING --severity INFO
-        continue-on-error: true
-
-      - name: Semgrep Quality Gate (blocks on ERROR in prod code)
-        run: semgrep scan --config p/owasp-top-ten --exclude='*.spec.ts' --exclude='*.test.ts' --exclude='test' --exclude='cypress' --exclude='.github' --exclude='data/static/codefixes' --severity ERROR --error
-
-  # TRIVY FILESYSTEM (secrets)
+          name: semgrep-reports
+          path: |
+            semgrep.sarif
+            semgrep.json
+          if-no-files-found: error
+          
+  # ---------------------------------------------------------------------------
+  # 3. Secret scan (Trivy filesystem)
+  # ---------------------------------------------------------------------------
   
   trivy-fs:
     runs-on: ubuntu-24.04
@@ -164,6 +187,7 @@ jobs:
     permissions:
       contents: read
       security-events: write
+      
     steps:
     
       - name: Harden Runner
@@ -176,8 +200,9 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Run Trivy filesystem scan (secrets)
+      - name: Trivy Filesystem Secret Scan (SARIF)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25   #v0.36.0
+        continue-on-error: true
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -185,21 +210,26 @@ jobs:
           format: 'sarif'
           output: 'trivy-fs.sarif'
 
-      - name: Upload Trivy SARIF to Security tab
+      - name: Upload Trivy FS SARIF to Security tab
+        if: always()
         uses: github/codeql-action/upload-sarif@7188fc363630916deb702c7fdcf4e481b751f97a  #v4.37.1
+        continue-on-error: true
         with:
           sarif_file: 'trivy-fs.sarif'
           category: trivy-fs
-        continue-on-error: true
+        
 
-      - name: Upload Trivy SARIF as artifact
-
+      - name: Upload Trivy SARIF FS as artifact
+        if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  #v7.0.1
         with:
           name: trivy-fs-sarif
           path: trivy-fs.sarif
-          
- # TRIVY CONFIG (IaC / Dockerfile)
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # 4. IaC / Dockerfile scan (Trivy config)
+  # ---------------------------------------------------------------------------
           
   trivy-config:
     runs-on: ubuntu-24.04
@@ -221,6 +251,7 @@ jobs:
 
       - name: Run Trivy config scan (IaC / Dockerfile)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  #v0.36.0
+        continue-on-error: true
         with:
           scan-type: 'config'
           scan-ref: '.'
@@ -228,26 +259,125 @@ jobs:
           output: 'trivy-config.sarif'
 
       - name: Upload Trivy config SARIF to Security tab
+        if: always()
         uses: github/codeql-action/upload-sarif@7188fc363630916deb702c7fdcf4e481b751f97a  #v4.37.1
+        continue-on-error: true
         with:
           sarif_file: 'trivy-config.sarif'
           category: trivy-config
-        continue-on-error: true
+        
 
       - name: Upload Trivy config SARIF as artifact
+        if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  #v7.0.1
         with:
           name: trivy-config-sarif
           path: trivy-config.sarif
+          if-no-files-found: error
+  # ---------------------------------------------------------------------------
+  # 5. THE SINGLE QUALITY GATE
+  #
+  # Waits for all scans, downloads their reports, evaluates every policy in ONE
+  # place. `jq` is pre-installed on GitHub-hosted Ubuntu runners.
+  #
+  # Trivy severity -> SARIF level mapping (from Trivy's own output):
+  #   CRITICAL, HIGH -> "error"   MEDIUM -> "warning"   LOW -> "note"
+  # so counting results with level=="error" == count of CRITICAL/HIGH.
+  # ---------------------------------------------------------------------------
 
-# IMPORT DEFECTDOJO
+  quality-gate:
+    needs: [build-and-scan-image, semgrep-sast, trivy-fs, trivy-config]
+    if: ${{ always() && !cancelled() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@b09bb98e06d4d774595224525879c09bc6e98c40  # v2.20.1
+        with:
+          egress-policy: audit
+ 
+      - name: Download all scan reports
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        with:
+          path: reports
+ 
+      - name: Evaluate Security Policy
+        shell: bash
+        run: |
+          set -u
+          echo "=============================================="
+          echo "            SECURITY QUALITY GATE"
+          echo "=============================================="
+          FAILED=0
+          fail() { echo "❌ $1"; FAILED=1; }
+          pass() { echo "✅ $1"; }
+ 
+          # An expected report that is missing means the scanner failed;
+          # we cannot assert safety, so that blocks the gate.
+          need() { [ -f "$1" ] || { fail "$2: report missing (scan failed?)"; return 1; }; }
+ 
+          # ---- Trivy Image: block on CRITICAL/HIGH ----
+          echo ""; echo "-- Trivy Image (policy: no fixable CRITICAL/HIGH) --"
+          F=reports/trivy-image-sarif/trivy-image.sarif
+          if need "$F" "Trivy Image"; then
+            N=$(jq '[.runs[]?.results[]? | select(.level=="error")] | length' "$F")
+            echo "CRITICAL/HIGH: $N"
+            [ "$N" -gt 0 ] && fail "Trivy Image" || pass "Trivy Image"
+          fi
+ 
+          # ---- Semgrep: block on ERROR ----
+          echo ""; echo "-- Semgrep (policy: no ERROR) --"
+          F=reports/semgrep-reports/semgrep.json
+          if need "$F" "Semgrep"; then
+            N=$(jq '[.results[]? | select((.extra.severity // "") | ascii_upcase == "ERROR")] | length' "$F")
+            echo "ERROR findings: $N"
+            [ "$N" -gt 0 ] && fail "Semgrep" || pass "Semgrep"
+          fi
+ 
+          # ---- Trivy Filesystem: block on any secret ----
+          echo ""; echo "-- Trivy Filesystem (policy: no secrets) --"
+          F=reports/trivy-fs-sarif/trivy-fs.sarif
+          if need "$F" "Trivy Filesystem"; then
+            N=$(jq '[.runs[]?.results[]?] | length' "$F")
+            echo "Secrets detected: $N"
+            [ "$N" -gt 0 ] && fail "Trivy Filesystem" || pass "Trivy Filesystem"
+          fi
+ 
+          # ---- Trivy Config: block on CRITICAL/HIGH ----
+          echo ""; echo "-- Trivy Config (policy: no CRITICAL/HIGH) --"
+          F=reports/trivy-config-sarif/trivy-config.sarif
+          if need "$F" "Trivy Config"; then
+            N=$(jq '[.runs[]?.results[]? | select(.level=="error")] | length' "$F")
+            echo "CRITICAL/HIGH: $N"
+            [ "$N" -gt 0 ] && fail "Trivy Config" || pass "Trivy Config"
+          fi
+ 
+          echo ""
+          echo "=============================================="
+          echo "                FINAL DECISION"
+          echo "=============================================="
+          if [ "$FAILED" -ne 0 ]; then
+            echo "❌ SECURITY QUALITY GATE: FAILED"
+            echo "🚫 APPLICATION STATUS: NOT READY FOR DEPLOYMENT"
+            exit 1
+          else
+            echo "✅ SECURITY QUALITY GATE: PASSED"
+            echo "🚀 APPLICATION STATUS: READY FOR DEPLOYMENT"
+          fi
+ 
+  # ---------------------------------------------------------------------------
+  # 6. Import all reports into DefectDojo (source of truth for SecureFlow).
+  #    Runs independently of the gate, so findings are recorded even when the
+  #    gate blocks the deploy. Push events only.
+  # ---------------------------------------------------------------------------
 
   import-defectdojo:
+    needs: [build-and-scan-image, semgrep-sast, trivy-fs, trivy-config]
+    if: ${{ always() && !cancelled() && github.event_name == 'push' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    needs: [build-and-scan-image, semgrep-sast, trivy-fs, trivy-config]
-    
-    if: ${{ github.event_name == 'push' && !cancelled() }}
     permissions:
       contents: read
 
@@ -265,91 +395,42 @@ jobs:
       - name: Guard:token DefectDojo présent ?
         id: guard
         run: |
-          if [ -z "$DEFECTDOJO_TOKEN" ]; then
-            echo "::warning::DEFECTDOJO_TOKEN absent (secret non configuré) — import sauté."
+          if [ -z "${DEFECTDOJO_URL}" ] || [ -z "${DEFECTDOJO_TOKEN}" ]; then
+            echo "::warning::DEFECTDOJO_URL/TOKEN not set ,import skipped."
             echo "enabled=false" >> "$GITHUB_OUTPUT"
           else
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           fi
           
-      - name: Download all SARIF artifacts
+      - name: Download all scan reports
         if: steps.guard.outputs.enabled == 'true'
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c   #v8.0.1
         with:
-          path: sarifs
-
-      - name: Reimport Semgrep
+          path: reports
+      
+      - name: Reimport into DefectDojo
         if: steps.guard.outputs.enabled == 'true'
+        shell: bash
         run: |
-          f=sarifs/semgrep-json/semgrep.json
-          if [ -f "$f" ]; then
-            curl -sS -f -X POST "$DEFECTDOJO_URL/api/v2/reimport-scan/" \
-              -H "Authorization: Token $DEFECTDOJO_TOKEN" \
-              -F "scan_type=Semgrep JSON Report" \
-              -F "product_name=OWASP Juice Shop" \
-              -F "engagement_name=Automated Scans" \
-              -F "test_title=Semgrep SAST" \
-              -F "auto_create_context=true" \
-              -F "close_old_findings=true" \
-              -F "minimum_severity=Info" \
-              -F "file=@$f"
-          else
-            echo "::warning::$f absent — import Semgrep sauté."
-          fi
-
-      - name: Reimport Trivy image
-        if: steps.guard.outputs.enabled == 'true'
-        run: |
-          f=sarifs/trivy-image-sarif/trivy-image.sarif
-          if [ -f "$f" ]; then
-            curl -sS -f -X POST "$DEFECTDOJO_URL/api/v2/reimport-scan/" \
-              -H "Authorization: Token $DEFECTDOJO_TOKEN" \
-              -F "scan_type=SARIF" \
-              -F "product_name=OWASP Juice Shop" \
-              -F "engagement_name=Automated Scans" \
-              -F "test_title=Trivy Image" \
-              -F "auto_create_context=true" \
-              -F "close_old_findings=true" \
-              -F "minimum_severity=Info" \
-              -F "file=@$f"
-          else
-            echo "::warning::$f absent — import Trivy image sauté."
-          fi
-
-      - name: Reimport Trivy filesystem
-        if: steps.guard.outputs.enabled == 'true'
-        run: |
-          f=sarifs/trivy-fs-sarif/trivy-fs.sarif
-          if [ -f "$f" ]; then
-            curl -sS -f -X POST "$DEFECTDOJO_URL/api/v2/reimport-scan/" \
-              -H "Authorization: Token $DEFECTDOJO_TOKEN" \
-              -F "scan_type=SARIF" \
-              -F "product_name=OWASP Juice Shop" \
-              -F "engagement_name=Automated Scans" \
-              -F "test_title=Trivy Filesystem" \
-              -F "auto_create_context=true" \
-              -F "close_old_findings=true" \
-              -F "minimum_severity=Info" \
-              -F "file=@$f"
-          else
-            echo "::warning::$f absent — import Trivy filesystem sauté."
-          fi
-
-      - name: Reimport Trivy config
-        if: steps.guard.outputs.enabled == 'true'
-        run: |
-          f=sarifs/trivy-config-sarif/trivy-config.sarif
-          if [ -f "$f" ]; then
-            curl -sS -f -X POST "$DEFECTDOJO_URL/api/v2/reimport-scan/" \
-              -H "Authorization: Token $DEFECTDOJO_TOKEN" \
-              -F "scan_type=SARIF" \
-              -F "product_name=OWASP Juice Shop" \
-              -F "engagement_name=Automated Scans" \
-              -F "test_title=Trivy Config" \
-              -F "auto_create_context=true" \
-              -F "close_old_findings=true" \
-              -F "minimum_severity=Info" \
-              -F "file=@$f"
-          else
-            echo "::warning::$f absent — import Trivy config sauté."
-          fi
+          set -u
+          reimport() {  # $1 scan_type, $2 test_title, $3 file
+            if [ -f "$3" ]; then
+              echo "Importing $2 ..."
+              curl -sS -f -X POST "$DEFECTDOJO_URL/api/v2/reimport-scan/" \
+                -H "Authorization: Token $DEFECTDOJO_TOKEN" \
+                -F "scan_type=$1" \
+                -F "product_name=$DD_PRODUCT" \
+                -F "engagement_name=$DD_ENGAGEMENT" \
+                -F "test_title=$2" \
+                -F "auto_create_context=true" \
+                -F "close_old_findings=true" \
+                -F "minimum_severity=Info" \
+                -F "file=@$3"
+            else
+              echo "::warning::$3 absent — $2 import skipped."
+            fi
+          }
+          reimport "Semgrep JSON Report" "Semgrep SAST"    reports/semgrep-reports/semgrep.json
+          reimport "SARIF"              "Trivy Image"      reports/trivy-image-sarif/trivy-image.sarif
+          reimport "SARIF"              "Trivy Filesystem" reports/trivy-fs-sarif/trivy-fs.sarif
+          reimport "SARIF"              "Trivy Config"     reports/trivy-config-sarif/trivy-config.sarif
